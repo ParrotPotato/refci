@@ -217,9 +217,13 @@ func runPollLoop(args []string) error {
 	}
 
 	routerDone := make(chan struct{})
+	configPath := ""
+	if configMode {
+		configPath = rest[0]
+	}
 	go func() {
 		defer close(routerDone)
-		routeWorkerRequests(ctx, workers, statusCh, rerunCh, cancelCh)
+		routeWorkerRequests(ctx, workers, statusCh, rerunCh, cancelCh, dbRepo, configPath, *interval)
 	}()
 	defer func() {
 		stop()
@@ -631,8 +635,8 @@ func rerunJob(ctx context.Context, dbRepo core.DbRepo, runner *core.JobRunner, c
 	if err != nil {
 		return err
 	}
-	if jobRow.Status != core.StatusFailed && jobRow.Status != core.StatusCanceled {
-		return fmt.Errorf("job status is %q; only failed/canceled jobs can be restarted", jobRow.Status)
+	if jobRow.Status != core.StatusFinished && jobRow.Status != core.StatusFailed && jobRow.Status != core.StatusCanceled {
+		return fmt.Errorf("job status is %q; only finished/failed/canceled jobs can be restarted", jobRow.Status)
 	}
 
 	latestJob, err := dbRepo.LatestJobByNameBranch(cfg.Repo, req.Name, req.Branch)
