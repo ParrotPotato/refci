@@ -562,7 +562,7 @@ func resolveRepoTarget(target string) (repo string, mirrorPath string, err error
 
 // pollOnce queues jobs whose branch moved. A failure in one job or branch is
 // collected and does not stop the others from being checked.
-func pollOnce(ctx context.Context, dbRepo core.DbRepo, runner *core.JobRunner, cfg runtimeConfig, jobs []core.JobConf, logf func(string, ...any)) error {
+func pollOnce(ctx context.Context, runner *core.JobRunner, cfg runtimeConfig, jobs []core.JobConf, logf func(string, ...any)) error {
 	var errs []error
 	for _, jc := range jobs {
 		branchSHA, err := core.ListBranchHeadsByPattern(ctx, cfg.Repo, jc.BranchPattern)
@@ -574,13 +574,12 @@ func pollOnce(ctx context.Context, dbRepo core.DbRepo, runner *core.JobRunner, c
 
 		for _, branch := range sortedBranchNames(branchSHA) {
 			sha := branchSHA[branch]
-			latestJob, err := dbRepo.LatestJobByNameBranch(cfg.Repo, jc.Name, branch)
+			prevSHA, err := runner.LastAutomaticSHA(cfg.Repo, jc.Name, branch)
 			if err != nil {
 				logPollEvent(logf, "scan job=%s branch=%s failed reading latest job: %v", jc.Name, branch, err)
 				errs = append(errs, err)
 				continue
 			}
-			prevSHA := latestJob.SHA
 			if prevSHA == sha {
 				continue
 			}

@@ -305,6 +305,7 @@ func prepareRepoWorker(ctx context.Context, dbRepo core.DbRepo, cfg runtimeConfi
 	ctx, stop := context.WithCancel(ctx)
 	worker := &repoWorker{rerunCh: rerunCh, cancelCh: cancelCh, done: done, stop: stop}
 	worker.config.Store(&cfg)
+	runner.SetEnv(func() []string { return worker.config.Load().Env })
 
 	go func() {
 		defer close(done)
@@ -343,7 +344,7 @@ func prepareRepoWorker(ctx context.Context, dbRepo core.DbRepo, cfg runtimeConfi
 					loopErr = fmt.Errorf("load .refci/conf.yml: %w", err)
 				} else if len(jobs) == 0 {
 					loopErr = fmt.Errorf("no jobs found in .refci/conf.yml for %s", cfg.Repo)
-				} else if err := pollOnce(ctx, dbRepo, runner, cfg, jobs, ciLogger.Logf); err != nil {
+				} else if err := pollOnce(ctx, runner, cfg, jobs, ciLogger.Logf); err != nil {
 					loopErr = fmt.Errorf("poll failed: %w", err)
 				}
 

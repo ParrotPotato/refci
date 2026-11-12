@@ -342,7 +342,7 @@ func TestPollOnceRecordsPrepareFailureAndContinues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := pollOnce(context.Background(), dbRepo, runner, cfg, jobs, nil); err == nil || !strings.Contains(err.Error(), "script not found") {
+	if err := pollOnce(context.Background(), runner, cfg, jobs, nil); err == nil || !strings.Contains(err.Error(), "script not found") {
 		t.Fatalf("pollOnce error = %v, want script not found", err)
 	}
 	broken, _ := dbRepo.LatestJobByNameBranch(cfg.Repo, "a-broken", "main")
@@ -353,7 +353,7 @@ func TestPollOnceRecordsPrepareFailureAndContinues(t *testing.T) {
 		t.Fatal("a failing job blocked the next job from being queued")
 	}
 	// the failure is recorded, so the next tick does not retry it
-	if err := pollOnce(context.Background(), dbRepo, runner, cfg, jobs, nil); err != nil {
+	if err := pollOnce(context.Background(), runner, cfg, jobs, nil); err != nil {
 		t.Fatalf("second pollOnce error = %v", err)
 	}
 }
